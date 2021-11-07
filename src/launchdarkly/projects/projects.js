@@ -1,17 +1,8 @@
-import NodeFetch from 'node-fetch';
-
-export class LaunchDarklyProjects {
-  constructor(
-    fetch = NodeFetch,
-    apiKey = process.env.LAUNCH_DARKLY_READER_ACCESS_TOKEN
-  ) {
-    this.fetch = fetch;
-    this.apiKey = apiKey;
-  }
-
+import { LaunchDarkly } from '../launch-darkly.js';
+export class LaunchDarklyProjects extends LaunchDarkly {
   async getAll() {
     const resp = await this.fetch(
-      `https://app.launchdarkly.com/api/v2/projects`,
+      `${this.BASE_URL_V2}/projects`,
       {
         method: 'GET',
         headers: {
