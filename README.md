@@ -17,13 +17,11 @@ What things you need to install the software and how to install them
 
 1. Clone this repository to your local environment
 2. Run `npm install`
-3. Configure ...
-4. 
+3. Copy `.env.sample` into `.env` file & fill in the details*
+4. Run `npm run migrate` on your terminal
+5. If you see your LaunchDarkly's feature flag names listed, you have set everything right. Congratulations!
 
-
-Run: ``
-
-if you see your LaunchDarkly's feature flag names listed, you have set everything right. Congratulations!
+*Note that `CONFIG_CAT_PLAN` is important. That will determine whether the code will create feature flag within your base product or not.
 
 ## Running the tests
 
