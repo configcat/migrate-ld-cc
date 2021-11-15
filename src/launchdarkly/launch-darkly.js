@@ -1,13 +1,15 @@
-import NodeFetch from 'node-fetch';
+import { BaseApi } from '../utils/base-api.js';
 
-export class LaunchDarkly {
-  BASE_URL_V2 = 'https://app.launchdarkly.com/api/v2';
+export class LaunchDarkly extends BaseApi {
+  BASE_URL = 'https://app.launchdarkly.com';
+  BASE_URL_V2 = `${this.BASE_URL}/api/v2`;
 
   constructor(
-    fetch = NodeFetch,
     apiKey = process.env.LAUNCH_DARKLY_READER_ACCESS_TOKEN
   ) {
-    this.fetch = fetch;
-    this.apiKey = apiKey;
+    super();
+    this.HEADERS = {
+      Authorization: apiKey
+    };
   }
 }

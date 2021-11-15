@@ -1,18 +1,17 @@
 import { LaunchDarkly } from '../launch-darkly.js';
 export class LaunchDarklyProjects extends LaunchDarkly {
   async getAll() {
-    const resp = await this.fetch(
-      `${this.BASE_URL_V2}/projects`,
-      {
-        method: 'GET',
-        headers: {
-          Authorization: this.apiKey
-        }
-      }
-    );
+    try {
+      const opts = {
+        url: `${this.BASE_URL_V2}/projects`
+      };
 
-    const parsedRes = JSON.parse(await resp.text() || {});
-    return this.transform(parsedRes)
+      const res = await super.gets(opts);
+
+      return this.transform(res);
+    } catch (ex) {
+      console.log(ex);
+    }
   }
 
   transform(data={}) {
