@@ -1,10 +1,10 @@
 export class LaunchDarklyEnvironments {
-  constructor() { }
+    constructor() {}
 
-  getEnvironmentsFromProjects(item={}) {
-    return item.environments?.map((env) => ({
-      key: env.key,
-      name: env.name
-    }));
-  }
+    getEnvironmentsFromProjects(item = {}) {
+        return item.environments?.map((env) => ({
+            key: env.key,
+            name: env.name,
+        }));
+    }
 }
