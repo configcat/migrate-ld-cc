@@ -39,20 +39,17 @@ export class ConfigCatConfigs extends ConfigCat {
             name: item.name,
             description: item.description,
         }));
+    }
 
-        // .map(item => {
-        //     const envs = {}
-        //     for (const [key, value] of Object.entries(object1)) {
-        //       envs[key] =
-        //     }
+    async delete(config) {
+        try {
+            const opts = {
+                url: `${this.BASE_URL}/v1/configs/${config.configId}`,
+            };
 
-        //     const envs = Object.entries(item?.environments || {})?.map(entry => {
-        //       const key =
-        //     })
-        //   }(
-        //     envs: item?.environments?.map(env => ({m
-        //       name:
-        //     }))
-        //   ))
+            super.delete(opts);
+        } catch (ex) {
+            console.log(ex);
+        }
     }
 }
