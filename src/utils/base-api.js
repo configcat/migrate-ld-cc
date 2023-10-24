@@ -55,6 +55,7 @@ export class BaseApi {
         const resTxt = await resp.text();
 
         if (!resp.ok) {
+            console.dir(opts, { depth: 99 });
             throw new Error(
                 `
           Status: ${resp.status}
