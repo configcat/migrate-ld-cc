@@ -69,6 +69,31 @@ export class BaseApi {
         return parsedRes;
     }
 
+    async delete(opts) {
+        const { url } = opts;
+
+        const obj = {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                ...this.HEADERS,
+            },
+        };
+
+        const resp = await this.fetch(url, obj);
+        const resTxt = await resp.text();
+
+        if (!resp.ok) {
+            throw new Error(
+                this.processError({
+                    status: resp.status,
+                    statusText: resp.statusText,
+                    msg: resTxt,
+                })
+            );
+        }
+    }
+
     processError(obj) {
         return JSON.stringify(obj);
     }
