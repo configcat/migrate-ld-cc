@@ -1,3 +1,4 @@
+import { strict as assert } from 'node:assert';
 import { ConfigCat } from '../config-cat.js';
 
 export class ConfigCatFeatureFlags extends ConfigCat {
@@ -16,56 +17,68 @@ export class ConfigCatFeatureFlags extends ConfigCat {
     }
 
     async create(configId, ldFlag, ccFlagTags) {
-        try {
-            const key = this.CAMELCASE(ldFlag.key);
-            const opts = {
-                url: `${this.BASE_URL}/v1/configs/${configId}/settings`,
-                body: JSON.stringify({
-                    key,
-                    name: ldFlag.name,
-                    settingType: ldFlag.kind,
-                    hint: ldFlag.description,
-                    tags: ccFlagTags.map(({ tagId }) => tagId),
-                }),
-            };
+        console.log(`Creating "${ldFlag.key}"`);
+        const key = this.CAMELCASE(ldFlag.key);
+        const opts = {
+            url: `${this.BASE_URL}/v1/configs/${configId}/settings`,
+            body: JSON.stringify({
+                key,
+                name: ldFlag.key,
+                settingType: ldFlag.kind === 'boolean' ? ldFlag.kind : 'string',
+                hint: ldFlag.description,
+                tags: ccFlagTags,
+            }),
+        };
 
-            const res = super.post(opts);
+        const res = await super.post(opts);
 
-            return res;
-        } catch (ex) {
-            console.log(ex);
-        }
+        return res;
     }
 
-    async setTargeting(configId, envId, ldFlag, ccFlagId) {
-        console.log(configId, envId, ccFlagId);
-        try {
-            const opts = {
-                url: `${this.BASE_URL}/v1/configs/${configId}/environments/${envId}/values`,
-                body: JSON.stringify({
-                    settingValues: [
-                        {
-                            rolloutRules: [
-                                {
-                                    comparisonAttribute: 'Identifier',
-                                    comparator: 'sensitiveIsOneOf',
-                                    comparisonValue:
-                                        ldFlag.prodBooleanTargeting.enabledUserIds.join(','),
-                                    value: true,
-                                },
-                            ],
-                            value: false,
-                            settingId: ccFlagId,
-                        },
-                    ],
-                }),
-            };
+    async setTargeting(configId, envId, ldFlag, ccFlagId, segmentKeyToIdMap) {
+        const prod = ldFlag.environments.production;
 
-            const res = super.post(opts);
+        const identifierRules = prod.individualTargetRules.map(({ userIds, value }) => ({
+            comparisonAttribute: 'Identifier',
+            comparator: 'sensitiveIsOneOf',
+            comparisonValue: userIds.join(','),
+            value,
+        }));
 
-            return res;
-        } catch (ex) {
-            console.log(ex);
-        }
+        const additionalRules = prod.additionalRules.map((rule) => {
+            if (rule.op === 'segmentMatch') {
+                const segmentKey = rule.comparisonValues[0]; // CC only supports matching on one segment
+                if (!segmentKeyToIdMap.has(segmentKey)) {
+                    assert.fail(`${ldFlag.name} has missing segment: ${segmentKey}`);
+                }
+                return {
+                    segmentComparator: rule.negate ? 'isNotIn' : 'isIn',
+                    segmentId: segmentKeyToIdMap.get(segmentKey),
+                    value: rule.value,
+                };
+            } else {
+                return {
+                    comparisonAttribute: rule.attribute,
+                    comparator: rule.negate ? 'sensitiveIsNotOneOf' : 'sensitiveIsOneOf',
+                    comparisonValue: rule.comparisonValues.join(','),
+                    value: rule.value,
+                };
+            }
+        });
+
+        const opts = {
+            url: `${this.BASE_URL}/v1/configs/${configId}/environments/${envId}/values`,
+            body: JSON.stringify({
+                settingValues: [
+                    {
+                        rolloutRules: [...identifierRules, ...additionalRules],
+                        value: prod.fallthrough,
+                        settingId: ccFlagId,
+                    },
+                ],
+            }),
+        };
+
+        await super.post(opts);
     }
 }
