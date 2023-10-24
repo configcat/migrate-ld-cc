@@ -29,4 +29,16 @@ export class ConfigCatTags extends ConfigCat {
             console.log(ex);
         }
     }
+
+    async delete(tag) {
+        try {
+            const opts = {
+                url: `${this.BASE_URL}/v1/tags/${tag.tagId}`,
+            };
+
+            return super.delete(opts);
+        } catch (ex) {
+            console.log(ex);
+        }
+    }
 }
