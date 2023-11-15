@@ -27,6 +27,7 @@ export class BaseApi {
         const resTxt = await resp.text();
 
         if (!resp.ok) {
+            console.dir(opts, { depth: null });
             throw new Error(
                 this.processError({
                     status: resp.status,
@@ -55,7 +56,7 @@ export class BaseApi {
         const resTxt = await resp.text();
 
         if (!resp.ok) {
-            console.dir(opts, { depth: 99 });
+            console.dir(opts, { depth: null });
             throw new Error(
                 `
           Status: ${resp.status}
@@ -84,6 +85,7 @@ export class BaseApi {
         const resTxt = await resp.text();
 
         if (!resp.ok) {
+            console.dir(opts, { depth: null });
             throw new Error(
                 this.processError({
                     status: resp.status,
