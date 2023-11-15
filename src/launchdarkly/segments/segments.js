@@ -1,18 +1,20 @@
 import { strict as assert } from 'node:assert';
 import { LaunchDarkly } from '../launch-darkly.js';
 
+const SUPPORTED_TARGETING_ATTRS = process.env.SUPPORTED_TARGETING_ATTRS.split(',');
+
 export class LaunchDarklySegments extends LaunchDarkly {
-    async getAll(projectKey, environmentKey) {
+    async getAll(projectKey, environment) {
         const segments = [];
 
         const opts = {
-            url: `${this.BASE_URL_V2}/segments/${projectKey}/${environmentKey}`,
+            url: `${this.BASE_URL_V2}/segments/${projectKey}/${environment.key}`,
         };
         const res = await super.gets(opts);
 
         for (const item of res.items) {
             this.validate(item);
-            segments.push(this.transform(environmentKey, item));
+            segments.push(this.transform(environment.name, item));
         }
 
         return segments;
@@ -30,7 +32,7 @@ export class LaunchDarklySegments extends LaunchDarkly {
             }
             const clause = rule.clauses[0];
 
-            if (!['clientId', 'internal'].includes(clause.attribute) || clause.op !== 'in') {
+            if (!SUPPORTED_TARGETING_ATTRS.includes(clause.attribute) || clause.op !== 'in') {
                 assert.fail(
                     `${name}: Segment has unexpected clause attribute/op (${clause.attribute}/${clause.op})`
                 );
@@ -46,7 +48,7 @@ export class LaunchDarklySegments extends LaunchDarkly {
         }
     }
 
-    transform(environmentKey, segmentResponse) {
+    transform(environmentName, segmentResponse) {
         let targeting;
         if (segmentResponse.included.length) {
             targeting = {
@@ -55,17 +57,17 @@ export class LaunchDarklySegments extends LaunchDarkly {
                 comparisonValue: segmentResponse.included.join(','),
             };
         } else {
-            const clientClause = segmentResponse.rules.find(
-                ({ clauses }) => clauses[0].attribute === 'clientId'
-            ).clauses[0];
-            targeting = {
-                comparisonAttribute: 'clientId',
-                comparator: 'sensitiveIsOneOf',
-                comparisonValue: clientClause.values.join(','),
-            };
+            for (const rule of segmentResponse.rules) {
+                const clause = rule.clauses[0];
+                targeting = {
+                    comparisonAttribute: clause.attribute,
+                    comparator: 'sensitiveIsOneOf',
+                    comparisonValue: clause.values.join(','),
+                };
+            }
         }
         return {
-            name: `[${environmentKey}] ${segmentResponse.name}`,
+            name: `[${environmentName}] ${segmentResponse.name}`,
             key: segmentResponse.key,
             description: segmentResponse.description,
             ...targeting,

@@ -87,6 +87,11 @@ export class LaunchDarklyFeatureFlags extends LaunchDarkly {
                         `${flagResponse.key}: Flag has percentage rollout as fallback for env ${envKey}`
                     );
                 }
+                if (fallthrough.variation === undefined) {
+                    assert.fail(
+                        `${flagResponse.key}: Flag has undefined fallback variation for env ${envKey}`
+                    );
+                }
                 rules?.forEach(({ rollout, clauses }) => {
                     if (clauses.length > 1) {
                         assert.fail(
@@ -149,10 +154,6 @@ export class LaunchDarklyFeatureFlags extends LaunchDarkly {
                 };
             });
 
-            if (fallthrough.variation === undefined) {
-                console.dir(flagResponse, { depth: 99 });
-            }
-
             return {
                 individualTargetRules,
                 additionalRules,
@@ -165,6 +166,8 @@ export class LaunchDarklyFeatureFlags extends LaunchDarkly {
                 getEnvironmentTargeting(environment),
             ])
         );
+
+        delete environments['barry-dev'];
 
         return {
             key: flagResponse.key,
