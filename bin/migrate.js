@@ -17,8 +17,8 @@ const CACHED_TAGS_FILE = 'tagsCache.json';
 
 const LD_CONSUMER_RESEARCH_PRODUCT_KEY = 'default';
 const CC_CONSUMER_RESEARCH_PRODUCT_ID = process.env.CONFIG_CAT_PRODUCT_ID;
-const MIGRATED_CONFIG_NAME = 'from launchdarkly';
-const MIGRATED_CONFIG_DESCRIPTION = 'migrated from launchdarkly';
+const MIGRATED_CONFIG_NAME = 'Main';
+const MIGRATED_CONFIG_DESCRIPTION = 'The main config for the app';
 
 const ld = {
     envs: new LaunchDarklyEnvironments(),
