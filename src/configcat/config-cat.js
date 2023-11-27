@@ -1,4 +1,3 @@
-import { camelCase } from 'camel-case';
 import NodeFetch from 'node-fetch';
 import { BaseApi } from '../utils/base-api.js';
 
@@ -7,12 +6,10 @@ let noOfRequests = 0;
 export class ConfigCat extends BaseApi {
     BASE_URL = 'https://api.configcat.com';
     PRICING_PLAN = '';
-    CAMELCASE;
 
     constructor(
         apiKey = process.env.CONFIG_CAT_API_AUTH_HEADER,
-        pricing_plan = process.env.CONFIG_CAT_PLAN,
-        camelcase = camelCase
+        pricing_plan = process.env.CONFIG_CAT_PLAN
     ) {
         super(async function (...args) {
             noOfRequests++;
@@ -35,6 +32,5 @@ export class ConfigCat extends BaseApi {
             Authorization: apiKey,
         };
         this.PRICING_PLAN = pricing_plan;
-        this.CAMELCASE = camelcase;
     }
 }

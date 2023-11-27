@@ -18,7 +18,7 @@ export class ConfigCatFeatureFlags extends ConfigCat {
 
     async create(configId, ldFlag, ccFlagTags) {
         console.log(`Creating "${ldFlag.key}"`);
-        const key = this.CAMELCASE(ldFlag.key);
+        const key = ldFlag.key;
         const opts = {
             url: `${this.BASE_URL}/v1/configs/${configId}/settings`,
             body: JSON.stringify({
