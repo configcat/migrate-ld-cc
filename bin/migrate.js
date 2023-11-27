@@ -67,12 +67,6 @@ async function getLaunchDarklyData() {
 }
 
 async function cleanExistingConfigCatData() {
-    const configs = await cc.configs.getAll(CC_CONSUMER_RESEARCH_PRODUCT_ID);
-    const fromLaunchDarkly = configs.find(({ name }) => name === MIGRATED_CONFIG_NAME);
-    if (fromLaunchDarkly) {
-        await cc.configs.delete(fromLaunchDarkly);
-    }
-
     if (!existsSync(CACHED_TAGS_FILE)) {
         const tags = await cc.tags.getAll(CC_CONSUMER_RESEARCH_PRODUCT_ID);
         for (const tag of tags) {
@@ -124,13 +118,6 @@ async function crudConfigCatData(ldEnvs, ldSegments, ldTags, ldFeatureFlags) {
         writeFileSync(CACHED_TAGS_FILE, JSON.stringify(Object.fromEntries(tagNameToIdMap)));
     }
     const segmentKeyToIdMap = await createConfigCatSegments(ldSegments);
-
-    const ccConfig = await cc.configs.create(
-        CC_CONSUMER_RESEARCH_PRODUCT_ID,
-        MIGRATED_CONFIG_NAME,
-        MIGRATED_CONFIG_DESCRIPTION
-    );
-    const { configId } = ccConfig;
 
     const ccEnvs = await cc.envs.list(CC_CONSUMER_RESEARCH_PRODUCT_ID);
 
