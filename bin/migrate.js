@@ -17,8 +17,7 @@ const CACHED_TAGS_FILE = 'tagsCache.json';
 
 const LD_CONSUMER_RESEARCH_PRODUCT_KEY = 'default';
 const CC_CONSUMER_RESEARCH_PRODUCT_ID = process.env.CONFIG_CAT_PRODUCT_ID;
-const MIGRATED_CONFIG_NAME = 'Main';
-const MIGRATED_CONFIG_DESCRIPTION = 'The main config for the app';
+const CC_MAIN_CONFIG_ID = process.env.CONFIG_CAT_MAIN_CONFIG_ID;
 
 const ld = {
     envs: new LaunchDarklyEnvironments(),
@@ -158,7 +157,7 @@ async function crudConfigCatData(ldEnvs, ldSegments, ldTags, ldFeatureFlags) {
             }
         }
 
-        const ccFf = await cc.ffs.create(configId, ldFlag, ccFlagTagIds);
+        const ccFf = await cc.ffs.create(CC_MAIN_CONFIG_ID, ldFlag, ccFlagTagIds);
 
         const str = `Flag
                 - Product ID: ${CC_CONSUMER_RESEARCH_PRODUCT_ID}
@@ -170,6 +169,12 @@ async function crudConfigCatData(ldEnvs, ldSegments, ldTags, ldFeatureFlags) {
             `;
         console.log(str);
 
-        await cc.ffs.setTargeting(configId, ccEnvs, ldFlag, ccFf.settingId, segmentKeyToIdMap);
+        await cc.ffs.setTargeting(
+            CC_MAIN_CONFIG_ID,
+            ccEnvs,
+            ldFlag,
+            ccFf.settingId,
+            segmentKeyToIdMap
+        );
     }
 }
