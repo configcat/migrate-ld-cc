@@ -15,9 +15,9 @@ import { ConfigCat } from '../src/configcat/config-cat.js';
 
 const CACHED_TAGS_FILE = 'tagsCache.json';
 
-const LD_CONSUMER_RESEARCH_PRODUCT_KEY = 'default';
-const CC_CONSUMER_RESEARCH_PRODUCT_ID = process.env.CONFIG_CAT_PRODUCT_ID;
-const CC_MAIN_CONFIG_ID = process.env.CONFIG_CAT_MAIN_CONFIG_ID;
+const LAUNCH_DARKLY_PRODUCT_KEY = process.env.LAUNCH_DARKLY_PRODUCT_KEY;
+const CONFIG_CAT_PRODUCT_ID = process.env.CONFIG_CAT_PRODUCT_ID;
+const CONFIG_CAT_CONFIG_ID = process.env.CONFIG_CAT_CONFIG_ID;
 
 const ld = {
     envs: new LaunchDarklyEnvironments(),
@@ -50,13 +50,13 @@ async function init() {
 init();
 
 async function getLaunchDarklyData() {
-    const ldEnvs = await ld.envs.getAll(LD_CONSUMER_RESEARCH_PRODUCT_KEY);
+    const ldEnvs = await ld.envs.getAll(LAUNCH_DARKLY_PRODUCT_KEY);
     const ldSegments = [];
     for (const env of ldEnvs) {
-        ldSegments.push(...(await ld.segments.getAll(LD_CONSUMER_RESEARCH_PRODUCT_KEY, env)));
+        ldSegments.push(...(await ld.segments.getAll(LAUNCH_DARKLY_PRODUCT_KEY, env)));
     }
-    const ldTags = await ld.tags.getAll(LD_CONSUMER_RESEARCH_PRODUCT_KEY);
-    const ldFeatureFlags = await ld.ffs.getAll(LD_CONSUMER_RESEARCH_PRODUCT_KEY);
+    const ldTags = await ld.tags.getAll(LAUNCH_DARKLY_PRODUCT_KEY);
+    const ldFeatureFlags = await ld.ffs.getAll(LAUNCH_DARKLY_PRODUCT_KEY);
 
     return {
         ldEnvs,
@@ -68,13 +68,13 @@ async function getLaunchDarklyData() {
 
 async function cleanExistingConfigCatData() {
     if (!existsSync(CACHED_TAGS_FILE)) {
-        const tags = await cc.tags.getAll(CC_CONSUMER_RESEARCH_PRODUCT_ID);
+        const tags = await cc.tags.getAll(CONFIG_CAT_PRODUCT_ID);
         for (const tag of tags) {
             await cc.tags.delete(tag);
         }
     }
 
-    const segments = await cc.segments.list(CC_CONSUMER_RESEARCH_PRODUCT_ID);
+    const segments = await cc.segments.list(CONFIG_CAT_PRODUCT_ID);
     for (const segment of segments) {
         await cc.segments.delete(segment);
     }
@@ -89,11 +89,7 @@ async function createConfigCatTags(ldTags) {
     for (const lowerCaseTag of lowerCaseTags) {
         if (!tagNameToIdMap.has(lowerCaseTag)) {
             const colour = colours[Math.floor(Math.random() * colours.length)];
-            const ccTag = await cc.tags.create(
-                CC_CONSUMER_RESEARCH_PRODUCT_ID,
-                lowerCaseTag,
-                colour
-            );
+            const ccTag = await cc.tags.create(CONFIG_CAT_PRODUCT_ID, lowerCaseTag, colour);
             tagNameToIdMap.set(lowerCaseTag, ccTag.tagId);
         }
     }
@@ -103,7 +99,7 @@ async function createConfigCatTags(ldTags) {
 async function createConfigCatSegments(ldSegments) {
     const segmentKeyToIdMap = new Map();
     for (const ldSegment of ldSegments) {
-        const ccSegment = await cc.segments.create(CC_CONSUMER_RESEARCH_PRODUCT_ID, ldSegment);
+        const ccSegment = await cc.segments.create(CONFIG_CAT_PRODUCT_ID, ldSegment);
         segmentKeyToIdMap.set(ldSegment.key, ccSegment.segmentId);
     }
     return segmentKeyToIdMap;
@@ -119,7 +115,7 @@ async function crudConfigCatData(ldEnvs, ldSegments, ldTags, ldFeatureFlags) {
     }
     const segmentKeyToIdMap = await createConfigCatSegments(ldSegments);
 
-    const ccEnvs = await cc.envs.list(CC_CONSUMER_RESEARCH_PRODUCT_ID);
+    const ccEnvs = await cc.envs.list(CONFIG_CAT_PRODUCT_ID);
 
     for (const ldFlag of ldFeatureFlags) {
         const ccFlagTagIds = [];
@@ -132,11 +128,7 @@ async function crudConfigCatData(ldEnvs, ldSegments, ldTags, ldFeatureFlags) {
         if (ldFlag.maintainerEmail) {
             const tagName = ldFlag.maintainerEmail.toLowerCase();
             if (!tagNameToIdMap.has(tagName)) {
-                const ccTag = await cc.tags.create(
-                    CC_CONSUMER_RESEARCH_PRODUCT_ID,
-                    tagName,
-                    'koala'
-                );
+                const ccTag = await cc.tags.create(CONFIG_CAT_PRODUCT_ID, tagName, 'koala');
                 tagNameToIdMap.set(tagName, ccTag.tagId);
                 ccFlagTagIds.push(ccTag.tagId);
             } else {
@@ -144,10 +136,10 @@ async function crudConfigCatData(ldEnvs, ldSegments, ldTags, ldFeatureFlags) {
             }
         }
 
-        const ccFf = await cc.ffs.create(CC_MAIN_CONFIG_ID, ldFlag, ccFlagTagIds);
+        const ccFf = await cc.ffs.create(CONFIG_CAT_CONFIG_ID, ldFlag, ccFlagTagIds);
 
         const str = `Flag
-                - Product ID: ${CC_CONSUMER_RESEARCH_PRODUCT_ID}
+                - Product ID: ${CONFIG_CAT_PRODUCT_ID}
                 - Config ID: ${ccFf.configId}
                 - Config Name: ${ccFf.configName}
                 - Flag Key: ${ccFf.key}
@@ -157,7 +149,7 @@ async function crudConfigCatData(ldEnvs, ldSegments, ldTags, ldFeatureFlags) {
         console.log(str);
 
         await cc.ffs.setTargeting(
-            CC_MAIN_CONFIG_ID,
+            CONFIG_CAT_CONFIG_ID,
             ccEnvs,
             ldFlag,
             ccFf.settingId,
