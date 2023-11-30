@@ -1,5 +1,4 @@
 import 'dotenv/config';
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 
 import { LaunchDarklyEnvironments } from '../src/launchdarkly/environments/environments.js';
 import { LaunchDarklyFeatureFlags } from '../src/launchdarkly/feature-flags/feature-flags.js';
@@ -12,8 +11,6 @@ import { ConfigCatEnvironments } from '../src/configcat/environments/environment
 import { ConfigCatTags } from '../src/configcat/tags/tags.js';
 import { ConfigCatSegments } from '../src/configcat/segments/segments.js';
 import { ConfigCat } from '../src/configcat/config-cat.js';
-
-const CACHED_TAGS_FILE = 'tagsCache.json';
 
 const LAUNCH_DARKLY_PRODUCT_KEY = process.env.LAUNCH_DARKLY_PRODUCT_KEY;
 const CONFIG_CAT_PRODUCT_ID = process.env.CONFIG_CAT_PRODUCT_ID;
@@ -67,11 +64,9 @@ async function getLaunchDarklyData() {
 }
 
 async function cleanExistingConfigCatData() {
-    if (!existsSync(CACHED_TAGS_FILE)) {
-        const tags = await cc.tags.getAll(CONFIG_CAT_PRODUCT_ID);
-        for (const tag of tags) {
-            await cc.tags.delete(tag);
-        }
+    const tags = await cc.tags.getAll(CONFIG_CAT_PRODUCT_ID);
+    for (const tag of tags) {
+        await cc.tags.delete(tag);
     }
 
     const segments = await cc.segments.list(CONFIG_CAT_PRODUCT_ID);
@@ -106,13 +101,7 @@ async function createConfigCatSegments(ldSegments) {
 }
 
 async function crudConfigCatData(ldEnvs, ldSegments, ldTags, ldFeatureFlags) {
-    let tagNameToIdMap;
-    if (existsSync(CACHED_TAGS_FILE)) {
-        tagNameToIdMap = new Map(Object.entries(JSON.parse(readFileSync(CACHED_TAGS_FILE))));
-    } else {
-        tagNameToIdMap = await createConfigCatTags(ldTags);
-        writeFileSync(CACHED_TAGS_FILE, JSON.stringify(Object.fromEntries(tagNameToIdMap)));
-    }
+    const tagNameToIdMap = await createConfigCatTags(ldTags);
     const segmentKeyToIdMap = await createConfigCatSegments(ldSegments);
 
     const ccEnvs = await cc.envs.list(CONFIG_CAT_PRODUCT_ID);
