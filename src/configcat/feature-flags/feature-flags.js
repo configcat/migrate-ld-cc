@@ -35,6 +35,14 @@ export class ConfigCatFeatureFlags extends ConfigCat {
         return res;
     }
 
+    async delete(ccFlagId, ccFlagKey) {
+        console.log(`Deleting "${ccFlagKey}"`);
+        const opts = {
+            url: `${this.BASE_URL}/v1/settings/${ccFlagId}`,
+        };
+        return super.delete(opts);
+    }
+
     async setTargeting(configId, ccEnvs, ldFlag, ccFlagId, segmentKeyToIdMap) {
         for (const [ldEnvKey, ldEnv] of Object.entries(ldFlag.environments)) {
             const ccEnv = ccEnvs.find(({ description }) => description === ldEnvKey);

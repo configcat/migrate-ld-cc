@@ -64,6 +64,11 @@ async function getLaunchDarklyData() {
 }
 
 async function cleanExistingConfigCatData() {
+    const flags = await cc.ffs.getAll(CONFIG_CAT_CONFIG_ID);
+    for (const { settingId: ccFlagId, key: ccFlagKey } of flags) {
+        await cc.ffs.delete(ccFlagId, ccFlagKey);
+    }
+
     const tags = await cc.tags.getAll(CONFIG_CAT_PRODUCT_ID);
     for (const tag of tags) {
         await cc.tags.delete(tag);
