@@ -1,0 +1,18 @@
+[
+	{
+		"id": "08db821f-1b35-47bf-82d4-4fdb4c95f659",
+		"name": "Stage"
+	},
+	{
+		"id": "08db821f-1b42-47bf-8d2d-f02fe13ae334",
+		"name": "Production"
+	},
+	{
+		"id": "08dbe522-05ad-4a8e-82a2-eb1c0036da38",
+		"name": "Devservers"
+	},
+	{
+		"id": "08dbe522-0946-4c56-8d5c-ded4aec218fd",
+		"name": "Integration"
+	}
+] 

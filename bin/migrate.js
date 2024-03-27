@@ -1,104 +1,153 @@
 import 'dotenv/config';
 
-import { LaunchDarklyProjects } from '../src/launchdarkly/projects/projects.js';
 import { LaunchDarklyEnvironments } from '../src/launchdarkly/environments/environments.js';
 import { LaunchDarklyFeatureFlags } from '../src/launchdarkly/feature-flags/feature-flags.js';
+import { LaunchDarklySegments } from '../src/launchdarkly/segments/segments.js';
+import { LaunchDarklyTags } from '../src/launchdarkly/tags/tags.js';
 
-import { ConfigCatProducts } from '../src/configcat/products/products.js';
 import { ConfigCatConfigs } from '../src/configcat/configs/configs.js';
 import { ConfigCatFeatureFlags } from '../src/configcat/feature-flags/feature-flags.js';
 import { ConfigCatEnvironments } from '../src/configcat/environments/environments.js';
+import { ConfigCatTags } from '../src/configcat/tags/tags.js';
+import { ConfigCatSegments } from '../src/configcat/segments/segments.js';
 import { ConfigCat } from '../src/configcat/config-cat.js';
 
+const LAUNCH_DARKLY_PRODUCT_KEY = process.env.LAUNCH_DARKLY_PRODUCT_KEY;
+const CONFIG_CAT_PRODUCT_ID = process.env.CONFIG_CAT_PRODUCT_ID;
+const CONFIG_CAT_CONFIG_ID = process.env.CONFIG_CAT_CONFIG_ID;
+
 const ld = {
-  projects: new LaunchDarklyProjects(),
-  envs: new LaunchDarklyEnvironments(),
-  ffs: new LaunchDarklyFeatureFlags()
-}
+    envs: new LaunchDarklyEnvironments(),
+    ffs: new LaunchDarklyFeatureFlags(),
+    segments: new LaunchDarklySegments(),
+    tags: new LaunchDarklyTags(),
+};
 
 const cc = {
-  base: new ConfigCat(),
-  products: new ConfigCatProducts(),
-  configs: new ConfigCatConfigs(),
-  ffs: new ConfigCatFeatureFlags(),
-  envs: new ConfigCatEnvironments()
-}
+    base: new ConfigCat(),
+    configs: new ConfigCatConfigs(),
+    ffs: new ConfigCatFeatureFlags(),
+    envs: new ConfigCatEnvironments(),
+    tags: new ConfigCatTags(),
+    segments: new ConfigCatSegments(),
+};
 
 async function init() {
-  const { ldProjects, ldEnvs, ldFeatureFlags } = await getLaunchDarklyData();
-  await crudConfigCatData(ldProjects, ldEnvs, ldFeatureFlags);
+    await cleanExistingConfigCatData();
+
+    const { ldEnvs, ldSegments, ldTags, ldFeatureFlags } = await getLaunchDarklyData();
+
+    if (!ldFeatureFlags) {
+        return;
+    }
+
+    await crudConfigCatData(ldEnvs, ldSegments, ldTags, ldFeatureFlags);
 }
 
 init();
 
 async function getLaunchDarklyData() {
-  const ldProjects = await ld.projects.getAll();
-  const ldEnvs = ld.envs.getEnvironmentsFromProjects(ldProjects[0]);
-  const ldFeatureFlags = await Promise.all(
-    ldProjects?.map(async (project) => ({
-      projectId: project.id,
-      featureFlags: await ld.ffs.getAll(project.key)
-    }))
-  );
+    const ldEnvs = await ld.envs.getAll(LAUNCH_DARKLY_PRODUCT_KEY);
+    const ldSegments = [];
+    for (const env of ldEnvs) {
+        ldSegments.push(...(await ld.segments.getAll(LAUNCH_DARKLY_PRODUCT_KEY, env)));
+    }
+    const ldTags = await ld.tags.getAll(LAUNCH_DARKLY_PRODUCT_KEY);
+    const ldFeatureFlags = await ld.ffs.getAll(LAUNCH_DARKLY_PRODUCT_KEY);
 
-  return {
-    ldProjects,
-    ldEnvs,
-    ldFeatureFlags
-  }
+    return {
+        ldEnvs,
+        ldSegments,
+        ldTags,
+        ldFeatureFlags,
+    };
 }
 
-async function crudConfigCatData(ldProjects, ldEnvs, ldFeatureFlags){
-  const ccProducts = await cc.products.getAll();
+async function cleanExistingConfigCatData() {
+    const flags = await cc.ffs.getAll(CONFIG_CAT_CONFIG_ID);
+    for (const { settingId: ccFlagId, key: ccFlagKey } of flags) {
+        await cc.ffs.delete(ccFlagId, ccFlagKey);
+    }
 
-  if(cc.base.PRICING_PLAN.toLowerCase() === 'free') {
-    const productId = ccProducts?.[0]?.productId;
-    const ccConfig = await cc.configs.create(productId, 'from launchdarkly', 'migrated from launchdarkly');
-    const { configId } = ccConfig;
+    const tags = await cc.tags.getAll(CONFIG_CAT_PRODUCT_ID);
+    for (const tag of tags) {
+        await cc.tags.delete(tag);
+    }
 
-    await Promise.all(
-      ldFeatureFlags?.map((obj) => {
-        return obj.featureFlags.map(async (ff) => {
-          const ccFf = await cc.ffs.create(configId, ff.key, ff.name);
-          const str = `Flag
-            - Product ID: ${productId}
-            - Config ID: ${ccFf.configId}
-            - Config Name: ${ccFf.configName}
-            - Flag Key: ${ccFf.key}
-            - Flag Name: ${ccFf.name}
-          `;
-          console.log(str);
-        })
-      })
-    );
-  } else {
-    // add products
-    // add environments
-    // add feature flags
+    const segments = await cc.segments.list(CONFIG_CAT_PRODUCT_ID);
+    for (const segment of segments) {
+        await cc.segments.delete(segment);
+    }
+}
 
-    // TODO:
-    // const ccProduct = await cc.products.create('test', 'test desc');
-    // console.log('ccProduct: ', ccProduct)
+async function createConfigCatTags(ldTags) {
+    const tagNameToIdMap = new Map();
+    const lowerCaseTags = ldTags.map((tag) => tag.toLowerCase());
 
-    // const ccConfigs = await Promise.all(
-    //   ccProducts?.map(async (product) => {
-    //     return ({
-    //       product,
-    //       configs: await cc.configs.getAll(product.productId)
-    //     })
-    //   })
-    // );
-    // console.log('ccConfigs: ', JSON.stringify(ccConfigs))
+    const colours = ['panther', 'whale', 'salmon', 'lizard', 'canary'];
 
-    // const prodId = '08d9a314-d068-4357-84d1-f7d86ccffa2e';
-    // const name = 'Test Product Name';
-    // const ccEnvs = await cc.envs.create(prodId, name);
-    // console.log('ccEnvs: ',ccEnvs);
+    for (const lowerCaseTag of lowerCaseTags) {
+        if (!tagNameToIdMap.has(lowerCaseTag)) {
+            const colour = colours[Math.floor(Math.random() * colours.length)];
+            const ccTag = await cc.tags.create(CONFIG_CAT_PRODUCT_ID, lowerCaseTag, colour);
+            tagNameToIdMap.set(lowerCaseTag, ccTag.tagId);
+        }
+    }
+    return tagNameToIdMap;
+}
 
-    // const configId = '08d9a314-d087-4974-868a-d26b60b4b227';
-    // const key = 'testkey';
-    // const name = 'test Name';
-    // const ccFfs = await cc.ffs.create(configId, key, name);
-    // console.log('ccFfs: ', ccFfs);
-  }
+async function createConfigCatSegments(ldSegments) {
+    const segmentKeyToIdMap = new Map();
+    for (const ldSegment of ldSegments) {
+        const ccSegment = await cc.segments.create(CONFIG_CAT_PRODUCT_ID, ldSegment);
+        segmentKeyToIdMap.set(ldSegment.key, ccSegment.segmentId);
+    }
+    return segmentKeyToIdMap;
+}
+
+async function crudConfigCatData(ldEnvs, ldSegments, ldTags, ldFeatureFlags) {
+    const tagNameToIdMap = await createConfigCatTags(ldTags);
+    const segmentKeyToIdMap = await createConfigCatSegments(ldSegments);
+
+    const ccEnvs = await cc.envs.list(CONFIG_CAT_PRODUCT_ID);
+
+    for (const ldFlag of ldFeatureFlags) {
+        const ccFlagTagIds = [];
+
+        if (ldFlag.tags.length > 0) {
+            for (const ldTag of ldFlag.tags) {
+                ccFlagTagIds.push(tagNameToIdMap.get(ldTag.toLowerCase()));
+            }
+        }
+        if (ldFlag.maintainerEmail) {
+            const tagName = ldFlag.maintainerEmail.toLowerCase();
+            if (!tagNameToIdMap.has(tagName)) {
+                const ccTag = await cc.tags.create(CONFIG_CAT_PRODUCT_ID, tagName, 'koala');
+                tagNameToIdMap.set(tagName, ccTag.tagId);
+                ccFlagTagIds.push(ccTag.tagId);
+            } else {
+                ccFlagTagIds.push(tagNameToIdMap.get(tagName));
+            }
+        }
+
+        const ccFf = await cc.ffs.create(CONFIG_CAT_CONFIG_ID, ldFlag, ccFlagTagIds);
+
+        const str = `Flag
+                - Product ID: ${CONFIG_CAT_PRODUCT_ID}
+                - Config ID: ${ccFf.configId}
+                - Config Name: ${ccFf.configName}
+                - Flag Key: ${ccFf.key}
+                - Flag Name: ${ccFf.name}
+                - Flag Id: ${ccFf.settingId}
+            `;
+        console.log(str);
+
+        await cc.ffs.setTargeting(
+            CONFIG_CAT_CONFIG_ID,
+            ccEnvs,
+            ldFlag,
+            ccFf.settingId,
+            segmentKeyToIdMap
+        );
+    }
 }
