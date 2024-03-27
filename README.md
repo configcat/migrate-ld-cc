@@ -2,7 +2,11 @@
 
 This repo contains a script to migrate Feature Flags from a LaunchDarkly project to ConfigCat.
 
-## Prerequisites
+## Getting Started
+
+These instructions will get you started on this project and run the migration from [LaunchDarkly](https://launchdarkly.com/) to [ConfigCat](https://configcat.com/).
+
+### Prerequisites
 
 - [NodeJs](https://nodejs.org/en/)
 
@@ -12,6 +16,7 @@ This repo contains a script to migrate Feature Flags from a LaunchDarkly project
 2. Run `npm install`
 3. Copy `.env.sample` into `.env` file & fill in the details (see below)
 4. Run `npm run migrate` on your terminal
+5. If you see your LaunchDarkly's feature flag names listed, you have set everything right. Congratulations!
 
 ### Environment Variables
 
