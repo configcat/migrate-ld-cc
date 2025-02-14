@@ -1,3 +1,7 @@
+| :mega: Important notice |
+|-------------------------|
+| The script in this repo is outdated and not fully functional. Another, more complete solution is under development and a preview version is already available. For more information, contact [ConfigCat support](https://configcat.com/support/). |
+
 # Migrate LaunchDarkly To ConfigCat
 
 This repo contains a script to migrate Feature Flags from a LaunchDarkly project to ConfigCat.
